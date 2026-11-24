@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Petit Laços — loja virtual
 
-## Getting Started
+Loja de laços e acessórios infantis. O plano completo está em `../PROMPT-SITE-PETIT-LACOS.md` e a identidade visual em `../identidade-visual.html`.
 
-First, run the development server:
+## Rodar no computador
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install              # instala dependências (gera o Prisma Client)
+npm run db:dev           # liga o banco PostgreSQL local (deixe este terminal aberto)
+npm run db:migrate       # cria/atualiza as tabelas
+npm run db:seed          # dados iniciais (dono, categorias, produtos de exemplo)
+npm run dev              # abre em http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Na primeira vez, copie `.env.example` para `.env` e preencha `DATABASE_URL` com a URL que o `npm run db:dev` mostrar.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Onde fica cada coisa no site
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Loja:** http://localhost:3000
+- **Painel:** http://localhost:3000/admin. O login do dono está no `.env` (`SEED_OWNER_EMAIL` / `SEED_OWNER_PASSWORD`).
+- **Editor de Aparência:** http://localhost:3000/admin/aparencia
+  - Temas prontos (Petit Clássico, Minimal Premium estilo Apple, Candy Pastel, Natal sazonal com agendamento).
+  - Cores, fontes, botões, cabeçalho, rodapé e barra de avisos.
+  - Layout dos cards de produto e da página do produto.
+  - Hero (textos, efeitos e fundo) e carrosséis.
+  - Animações.
+  - Seções da Home (arrastar e soltar).
+  - Versões, importar/exportar e voltar ao padrão.
+  - Tudo vai para um **rascunho** salvo sozinho; a loja só muda ao clicar em **Publicar**.
 
-## Learn More
+> Imagens enviadas pelo editor ficam em `public/uploads/` e funcionam só rodando no computador. Na hospedagem, elas passam a ir para o Cloudinary (Fase 2).
 
-To learn more about Next.js, take a look at the following resources:
+## Comandos úteis
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Comando | O que faz |
+|---|---|
+| `npm run dev` | Site em modo desenvolvimento |
+| `npm run build` | Gera a versão de produção |
+| `npm run typecheck` | Confere os tipos TypeScript |
+| `npm run lint` | Confere o padrão do código |
+| `npm run db:studio` | Abre uma tela para ver/editar o banco |
+| `npm run db:migrate` | Aplica mudanças do `prisma/schema.prisma` |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Tecnologias
 
-## Deploy on Vercel
+Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind CSS 4 · shadcn/ui · Prisma 7 + PostgreSQL · Zod.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Estrutura
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+prisma/
+  schema.prisma        # modelo de dados (dinheiro sempre em centavos)
+  seed.ts              # dados iniciais
+src/
+  app/                 # páginas (loja e, a partir da Fase 2, /admin)
+  components/ui/       # componentes base (shadcn/ui)
+  config/site.ts       # nome, slogan e logos da marca
+  generated/prisma/    # Prisma Client (gerado, fora do git)
+  lib/
+    db.ts              # conexão com o banco
+    env.ts             # variáveis de ambiente validadas
+    money.ts           # formatação de R$ e descontos
+    password.ts        # hash de senhas (scrypt)
+    permissions.ts     # permissões padrão por perfil
+public/brand/          # logos otimizadas
+```
+
+## Regras do projeto
+
+- **Venda Local é o modo padrão.** "Vender para todo o Brasil" fica desligado em `StoreSettings.nationwideShippingEnabled`.
+- Cores, fontes e raios vêm das variáveis em `src/app/globals.css`. Não use cores fixas nos componentes, porque o Editor de Aparência (Fase 3) vai sobrescrever essas variáveis.
+- Valores em dinheiro são inteiros em centavos (`1490` = R$ 14,90).

@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# modelo de variáveis de ambiente pode ir para o git
+!.env.example
+
+# imagens enviadas pelo editor (local)
+/public/uploads

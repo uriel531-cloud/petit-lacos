@@ -1,26 +1,489 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * ─── Identidade Petit Laços ────────────────────────────────────────────────
+ * Fonte: identidade-visual.html. As três primeiras cores vêm da logo;
+ * as demais são tons do mesmo azul (matiz 207°).
+ *
+ * Proporção de uso: muito branco e azul-claro; Marinho nos textos;
+ * Azul Profundo só onde a pessoa deve clicar; Champanhe em pequenos toques.
+ * Evite Azul Profundo em texto pequeno sobre Azul Petit (contraste 4,4:1) — use Marinho.
+ *
+ * Fase 3 (Editor de Aparência) vai sobrescrever estas variáveis no <html>
+ * a partir do tema publicado. Nenhum componente deve usar cor fixa no código.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Cores da logo */
+  --petit-azul: #cedeeb; /* Azul Petit — a cor da marca */
+  --petit-branco: #ffffff; /* Branco Cetim — o laço */
+  --petit-tinta: #000000; /* Preto Tinta — só a escrita da logo */
+
+  /* Cores de apoio */
+  --petit-ceu: #eef4f9; /* Azul Céu — fundos de seções e cartões */
+  --petit-bruma: #a9c2d7; /* Azul Bruma — bordas, pespontos, ícones */
+  --petit-profundo: #46667f; /* Azul Profundo — botões, links e preços */
+  --petit-marinho: #1e3042; /* Marinho — títulos e textos */
+  --petit-perola: #f4f5f3; /* Pérola — cartões e papel */
+  --petit-champanhe: #e8dccb; /* Champanhe — selos e datas especiais */
+
+  /* Neutros auxiliares usados no guia de identidade */
+  --petit-texto-suave: #4b5a69;
+  --petit-linha: #dce6ef;
+
+  /* Tokens semânticos (shadcn/ui) mapeados para a marca */
+  --background: var(--petit-branco);
+  --foreground: var(--petit-marinho);
+  --card: var(--petit-branco);
+  --card-foreground: var(--petit-marinho);
+  --popover: var(--petit-branco);
+  --popover-foreground: var(--petit-marinho);
+  --primary: var(--petit-profundo);
+  --primary-foreground: var(--petit-branco);
+  --secondary: var(--petit-azul);
+  --secondary-foreground: var(--petit-marinho);
+  --muted: var(--petit-ceu);
+  --muted-foreground: var(--petit-texto-suave);
+  --accent: var(--petit-ceu);
+  --accent-foreground: var(--petit-marinho);
+  --highlight: var(--petit-champanhe);
+  --highlight-foreground: var(--petit-marinho);
+  --destructive: #b0584e;
+  --success: #4f8a6b;
+  --border: var(--petit-linha);
+  --input: var(--petit-linha);
+  --ring: var(--petit-profundo);
+
+  --chart-1: var(--petit-profundo);
+  --chart-2: var(--petit-bruma);
+  --chart-3: var(--petit-champanhe);
+  --chart-4: var(--petit-marinho);
+  --chart-5: var(--petit-azul);
+
+  --sidebar: var(--petit-perola);
+  --sidebar-foreground: var(--petit-marinho);
+  --sidebar-primary: var(--petit-profundo);
+  --sidebar-primary-foreground: var(--petit-branco);
+  --sidebar-accent: var(--petit-ceu);
+  --sidebar-accent-foreground: var(--petit-marinho);
+  --sidebar-border: var(--petit-linha);
+  --sidebar-ring: var(--petit-profundo);
+
+  /* Forma */
+  --radius: 18px; /* "raio" do guia de identidade */
+  --pesponto: 2px dashed var(--petit-bruma);
+
+  /* Padrões do tema (sobrescritos pelo <style> gerado em src/features/theme/css.ts) */
+  --font-titulo: var(--ff-cormorant), Garamond, serif;
+  --font-texto: var(--ff-nunito-sans), system-ui, sans-serif;
+  --font-assinatura: var(--ff-sacramento), cursive;
+  --heading-weight: 600;
+  --heading-tracking: 0em;
+  --type-scale: 1;
+  --sale: #b0584e;
+  --brand: var(--petit-azul);
+  --surface-alt: var(--petit-ceu);
+  --announcement-bg: var(--petit-azul);
+  --announcement-fg: var(--petit-marinho);
+  --footer-bg: var(--petit-marinho);
+  --footer-fg: var(--petit-ceu);
+  --section-branco: var(--background);
+  --section-ceu: var(--petit-ceu);
+  --section-marca: var(--petit-azul);
+  --section-perola: var(--petit-perola);
+  --section-destaque: var(--petit-champanhe);
+  --shadow-card: 0 1px 2px rgb(30 48 66 / 0.05), 0 10px 24px -14px rgb(30 48 66 / 0.22);
+  --shadow-hover: 0 4px 8px rgb(30 48 66 / 0.08), 0 24px 48px -16px rgb(30 48 66 / 0.4);
+  --section-space: 3.25rem;
+  --section-space-lg: 5rem;
+  --btn-radius: 999px;
+  --btn-bg: var(--primary);
+  --btn-fg: var(--primary-foreground);
+  --btn-border: var(--primary);
+  --btn-hover-bg: color-mix(in srgb, var(--primary) 88%, white);
+  --btn-hover-fg: var(--primary-foreground);
+  --btn-transform: none;
+  --btn-tracking: 0;
+  --motion-duration: 0.6s;
+  --motion-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --cols-m: 2;
+  --cols-t: 3;
+  --cols-d: 4;
+  --grid-gap: 1.25rem;
+  --card-image-bg: var(--petit-ceu);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-sale: var(--sale);
+  --color-brand: var(--brand);
+  --color-surface-alt: var(--surface-alt);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Paleta da marca como utilitários: bg-petit-azul, text-petit-marinho… */
+  --color-petit-azul: var(--petit-azul);
+  --color-petit-branco: var(--petit-branco);
+  --color-petit-tinta: var(--petit-tinta);
+  --color-petit-ceu: var(--petit-ceu);
+  --color-petit-bruma: var(--petit-bruma);
+  --color-petit-profundo: var(--petit-profundo);
+  --color-petit-marinho: var(--petit-marinho);
+  --color-petit-perola: var(--petit-perola);
+  --color-petit-champanhe: var(--petit-champanhe);
+
+  /* Fontes (carregadas com next/font em layout.tsx) */
+  --font-sans: var(--font-texto);
+  --font-heading: var(--font-titulo);
+  --font-script: var(--font-assinatura);
+  --font-mono: ui-monospace, Consolas, monospace;
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+    font-size: calc(100% * var(--type-scale, 1));
+  }
+  body {
+    @apply bg-background text-foreground;
+    line-height: 1.6;
+  }
+  /* Títulos: Cormorant Garamond 600 */
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading text-foreground;
+    font-weight: var(--heading-weight, 600);
+    letter-spacing: var(--heading-tracking, 0);
+    line-height: 1.12;
+    text-wrap: balance;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 3px solid var(--petit-profundo);
+    outline-offset: 3px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  /* Sacramento: só para duas ou três palavras de destaque, nunca em parágrafos */
+  .assinatura {
+    font-family: var(--font-assinatura);
+    font-weight: 400;
+    line-height: 1;
+  }
+  /* Costura tracejada da identidade */
+  .pesponto {
+    border: var(--pesponto);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Classes do tema (lidas do Editor de Aparência) ─────────────────────── */
+@layer components {
+  .btn-theme,
+  .btn-theme-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.7rem 1.4rem;
+    border-radius: var(--btn-radius);
+    border: 2px solid var(--btn-border);
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    font-weight: 700;
+    font-size: 0.925rem;
+    line-height: 1;
+    text-transform: var(--btn-transform);
+    letter-spacing: var(--btn-tracking);
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease,
+      transform 0.2s ease;
+  }
+  .btn-theme:hover {
+    background: var(--btn-hover-bg);
+    color: var(--btn-hover-fg);
+  }
+  .btn-theme:active,
+  .btn-theme-secondary:active {
+    transform: translateY(1px);
+  }
+  .btn-theme:disabled,
+  .btn-theme-secondary:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  /* Botão secundário: sempre contorno, independente do estilo escolhido */
+  .btn-theme-secondary {
+    background: transparent;
+    color: var(--foreground);
+    border-color: color-mix(in srgb, currentColor 45%, transparent);
+  }
+  .btn-theme-secondary:hover {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+  }
+  .btn-theme-sm {
+    min-height: 2.25rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .section-pad {
+    padding-block: var(--section-space);
+  }
+  @media (min-width: 1024px) {
+    .section-pad {
+      padding-block: var(--section-space-lg);
+    }
+  }
+
+  .grid-products {
+    display: grid;
+    gap: var(--grid-gap);
+    grid-template-columns: repeat(var(--cols-m), minmax(0, 1fr));
+  }
+  @media (min-width: 768px) {
+    .grid-products {
+      grid-template-columns: repeat(var(--cols-t), minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .grid-products {
+      grid-template-columns: repeat(var(--cols-d), minmax(0, 1fr));
+    }
+  }
+
+  /* Logo transparente (laço branco) visível sobre fundos claros */
+  .logo-contorno {
+    filter: drop-shadow(0 1px 1.5px rgb(30 48 66 / 0.28)) drop-shadow(0 0 0.5px rgb(30 48 66 / 0.35));
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-marquee {
+  animation: marquee var(--marquee-duration, 28s) linear infinite;
+}
+
+@keyframes kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.1);
+  }
+}
+.animate-kenburns {
+  animation: kenburns var(--kenburns-duration, 7s) ease-out forwards;
+}
+
+@keyframes hero-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.animate-hero-progress {
+  transform-origin: left;
+  animation: hero-progress var(--hero-interval, 6s) linear forwards;
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.animate-caret {
+  animation: caret-blink 1s step-end infinite;
+}
+
+/* ─── Decoração sazonal (neve, estrelas, luzinhas) ───────────────────────── */
+.decor-item {
+  position: absolute;
+  display: block;
+  will-change: transform, opacity;
+}
+.decor-snow {
+  top: -5%;
+  animation-name: decor-snowfall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  opacity: 0.85;
+}
+.decor-star {
+  animation-name: decor-twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+@keyframes decor-snowfall {
+  0% {
+    transform: translate3d(0, -5vh, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(var(--sway, 20px), 50vh, 0) rotate(180deg);
+  }
+  100% {
+    transform: translate3d(0, 110vh, 0) rotate(360deg);
+  }
+}
+@keyframes decor-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+}
+.garland-bulb {
+  animation: garland-glow 1.4s ease-in-out infinite alternate;
+}
+@keyframes garland-glow {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+    filter: drop-shadow(0 0 3px currentColor);
+  }
+}
+/* No celular, metade dos flocos (menos distração e mais leve) */
+@media (max-width: 767px) {
+  .decor-desktop {
+    display: none;
+  }
+}
+/* Quem pediu menos movimento não vê a neve/estrelas, e as luzinhas param de piscar */
+@media (prefers-reduced-motion: reduce) {
+  .decor-layer {
+    display: none;
+  }
+  .garland-bulb {
+    animation: none;
+  }
+}
+
+/*
+ * ─── Tema escuro do PAINEL (/admin) ─────────────────────────────────────────
+ * Só o painel usa. A loja é sempre clara (identidade da marca).
+ * Todas as combinações de texto têm contraste ≥ 7:1 (WCAG AAA).
+ */
+.dark {
+  color-scheme: dark;
+  --background: #0d1620;
+  --foreground: #e8eef4;
+  --card: #142130;
+  --card-foreground: #e8eef4;
+  --popover: #142130;
+  --popover-foreground: #e8eef4;
+  --primary: #9ec3e0;
+  --primary-foreground: #0d1620;
+  --secondary: #24384c;
+  --secondary-foreground: #e8eef4;
+  --muted: #1a2836;
+  --muted-foreground: #a7b6c4;
+  --accent: #1e2e3e;
+  --accent-foreground: #e8eef4;
+  --highlight: #4a3f2e;
+  --highlight-foreground: #f3e7d3;
+  --destructive: #f2958a;
+  --success: #82c9a1;
+  --border: #2a3b4d;
+  --input: #2f4255;
+  --ring: #9ec3e0;
+  --sidebar: #101c28;
+  --sidebar-foreground: #e8eef4;
+  --sidebar-primary: #9ec3e0;
+  --sidebar-primary-foreground: #0d1620;
+  --sidebar-accent: #1e2e3e;
+  --sidebar-accent-foreground: #e8eef4;
+  --sidebar-border: #2a3b4d;
+  --sidebar-ring: #9ec3e0;
+}
+.dark :focus-visible {
+  outline-color: #9ec3e0;
 }

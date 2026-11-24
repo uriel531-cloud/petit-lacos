@@ -1,0 +1,688 @@
+// Petit Laços — schema do banco de dados
+// Valores em dinheiro são sempre inteiros em CENTAVOS (ex.: R$ 14,90 = 1490).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────
+// Usuários, perfis e permissões
+// ─────────────────────────────────────────────────────────────
+
+enum Role {
+  CLIENTE
+  FUNCIONARIO
+  VENDEDOR
+  DONO
+}
+
+/// Permissões que o dono pode ligar/desligar individualmente
+/// (sobrepõem o padrão do perfil — ver src/lib/permissions.ts).
+enum Permission {
+  GERENCIAR_PRODUTOS
+  GERENCIAR_PEDIDOS
+  VER_TODOS_PEDIDOS
+  ALTERAR_MODO_VENDA
+  EDITAR_TEMA
+  PUBLICAR_TEMA
+  GERENCIAR_CONTEUDO
+  GERENCIAR_CUPONS
+  VER_FINANCEIRO
+  GERENCIAR_USUARIOS
+}
+
+model User {
+  id               String    @id @default(cuid())
+  name             String
+  email            String    @unique
+  emailVerified    DateTime?
+  image            String?
+  passwordHash     String?
+  role             Role      @default(CLIENTE)
+  /// WhatsApp no formato internacional só com dígitos (ex.: 5511999998888)
+  whatsapp         String?
+  cpf              String?
+  active           Boolean   @default(true)
+  twoFactorSecret  String?
+  twoFactorEnabled Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  permissions     UserPermission[]
+  addresses       Address[]
+  cart            Cart?
+  wishlist        WishlistItem[]
+  reviews         Review[]
+  ordersAsClient  Order[]              @relation("OrderCustomer")
+  ordersAsSeller  Order[]              @relation("OrderSeller")
+  statusChanges   OrderStatusHistory[]
+  localDeliveries LocalDelivery[]
+  activityLogs    ActivityLog[]
+  themeVersions   ThemeVersion[]
+
+  @@index([role, active])
+}
+
+model UserPermission {
+  userId     String
+  permission Permission
+  granted    Boolean
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permission])
+}
+
+// Tabelas padrão do Auth.js (adapter Prisma)
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  userId     String
+  label      String?
+  recipient  String
+  zipCode    String
+  street     String
+  number     String
+  complement String?
+  district   String
+  city       String
+  state      String   @db.Char(2)
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Catálogo
+// ─────────────────────────────────────────────────────────────
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  imageUrl    String?
+  position    Int        @default(0)
+  active      Boolean    @default(true)
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryTree")
+  products    Product[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Collection {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  imageUrl    String?
+  position    Int       @default(0)
+  active      Boolean   @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum ProductStatus {
+  RASCUNHO
+  PUBLICADO
+  ESGOTADO
+  ARQUIVADO
+}
+
+model Product {
+  id                  String           @id @default(cuid())
+  name                String
+  slug                String           @unique
+  description         String           @default("")
+  /// Medidas, ex.: "Laço 8 cm · presilha bico de pato 4,5 cm"
+  measurements        String?
+  materials           String?
+  care                String?
+  status              ProductStatus    @default(RASCUNHO)
+  isNew               Boolean          @default(false)
+  isFeatured          Boolean          @default(false)
+  /// Preço base em centavos (variações podem sobrescrever)
+  priceCents          Int
+  /// Preço "de" (riscado) em centavos
+  compareAtPriceCents Int?
+  /// Custo em centavos — visível só para quem tem VER_FINANCEIRO
+  costCents           Int?
+  /// Peso e dimensões da embalagem — obrigatórios só no modo "Vender para todo o Brasil"
+  weightGrams         Int?
+  lengthCm            Float?
+  widthCm             Float?
+  heightCm            Float?
+  tags                String[]         @default([])
+  categoryId          String?
+  category            Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  collections         Collection[]
+  images              ProductImage[]
+  variants            ProductVariant[]
+  reviews             Review[]
+  wishlist            WishlistItem[]
+  orderItems          OrderItem[]
+  publishedAt         DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([status, isFeatured])
+  @@index([categoryId])
+}
+
+model ProductImage {
+  id        String          @id @default(cuid())
+  productId String
+  variantId String?
+  url       String
+  alt       String          @default("")
+  width     Int?
+  height    Int?
+  position  Int             @default(0)
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  createdAt DateTime        @default(now())
+
+  @@index([productId, position])
+}
+
+/// Todo produto tem pelo menos uma variação (a "padrão"), que guarda SKU e estoque.
+model ProductVariant {
+  id           String             @id @default(cuid())
+  productId    String
+  sku          String             @unique
+  /// Nome exibido, ex.: "Rosa · Bico de pato"
+  name         String             @default("Padrão")
+  /// Opções, ex.: { "cor": "Rosa", "presilha": "Bico de pato" }
+  options      Json               @default("{}")
+  /// Sobrescreve o preço do produto, se preenchido
+  priceCents   Int?
+  stock        Int                @default(0)
+  isDefault    Boolean            @default(false)
+  active       Boolean            @default(true)
+  position     Int                @default(0)
+  product      Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  images       ProductImage[]
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  reservations StockReservation[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([productId])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  productId  String
+  userId     String?
+  orderId    String?
+  authorName String
+  rating     Int
+  comment    String?
+  approved   Boolean  @default(false)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+
+  @@index([productId, approved])
+}
+
+model WishlistItem {
+  userId    String
+  productId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, productId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Carrinho e cupons
+// ─────────────────────────────────────────────────────────────
+
+model Cart {
+  id           String     @id @default(cuid())
+  userId       String?    @unique
+  /// Para visitantes sem conta (cookie)
+  sessionToken String?    @unique
+  couponId     String?
+  coupon       Coupon?    @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  user         User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items        CartItem[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String         @id @default(cuid())
+  cartId    String
+  variantId String
+  quantity  Int
+  cart      Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+
+  @@unique([cartId, variantId])
+}
+
+enum CouponType {
+  PERCENTUAL
+  VALOR_FIXO
+}
+
+model Coupon {
+  id                String     @id @default(cuid())
+  code              String     @unique
+  description       String?
+  type              CouponType
+  /// PERCENTUAL: 10 = 10% · VALOR_FIXO: centavos
+  value             Int
+  minSubtotalCents  Int?
+  maxUses           Int?
+  usedCount         Int        @default(0)
+  perCustomerLimit  Int?
+  firstPurchaseOnly Boolean    @default(false)
+  startsAt          DateTime?
+  endsAt            DateTime?
+  active            Boolean    @default(true)
+  carts             Cart[]
+  orders            Order[]
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// Pedidos
+// ─────────────────────────────────────────────────────────────
+
+enum DeliveryType {
+  /// Entrega combinada pelo WhatsApp (modo padrão)
+  LOCAL
+  /// Envio com frete (só com "Vender para todo o Brasil" ligado)
+  ENVIO
+}
+
+enum OrderStatus {
+  AGUARDANDO_PAGAMENTO
+  PAGO
+  // fluxo LOCAL
+  AGUARDANDO_COMBINAR_ENTREGA
+  ENTREGA_COMBINADA
+  // fluxo ENVIO
+  EM_SEPARACAO
+  ENVIADO
+  // ambos
+  ENTREGUE
+  CANCELADO
+  REEMBOLSADO
+}
+
+model Order {
+  id               String               @id @default(cuid())
+  /// Número exibido ao cliente (#1001, #1002…)
+  number           Int                  @unique @default(autoincrement())
+  status           OrderStatus          @default(AGUARDANDO_PAGAMENTO)
+  deliveryType     DeliveryType         @default(LOCAL)
+  customerId       String?
+  sellerId         String?
+  customerName     String
+  customerEmail    String
+  customerWhatsapp String
+  customerCpf      String?
+  /// Modo local: bairro/cidade informado no checkout (opcional)
+  localArea        String?
+  notes            String?
+  /// Modo envio: snapshot do endereço de entrega
+  shippingAddress  Json?
+  subtotalCents    Int
+  discountCents    Int                  @default(0)
+  shippingCents    Int                  @default(0)
+  totalCents       Int
+  couponId         String?
+  couponCode       String?
+  paidAt           DateTime?
+  deliveredAt      DateTime?
+  cancelledAt      DateTime?
+  customer         User?                @relation("OrderCustomer", fields: [customerId], references: [id], onDelete: SetNull)
+  seller           User?                @relation("OrderSeller", fields: [sellerId], references: [id], onDelete: SetNull)
+  coupon           Coupon?              @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  items            OrderItem[]
+  payments         Payment[]
+  shipment         Shipment?
+  localDelivery    LocalDelivery?
+  statusHistory    OrderStatusHistory[]
+  reservations     StockReservation[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([status, deliveryType])
+  @@index([sellerId])
+  @@index([customerId])
+  @@index([customerEmail])
+}
+
+/// Guarda uma "foto" do produto no momento da compra.
+model OrderItem {
+  id             String          @id @default(cuid())
+  orderId        String
+  productId      String?
+  variantId      String?
+  productName    String
+  variantName    String?
+  sku            String?
+  imageUrl       String?
+  unitPriceCents Int
+  quantity       Int
+  totalCents     Int
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product        Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant        ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+}
+
+model OrderStatusHistory {
+  id          String       @id @default(cuid())
+  orderId     String
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  note        String?
+  changedById String?
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy   User?        @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime     @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+/// Estoque reservado enquanto o pagamento (Pix/boleto) não é confirmado.
+model StockReservation {
+  id         String         @id @default(cuid())
+  orderId    String
+  variantId  String
+  quantity   Int
+  expiresAt  DateTime
+  releasedAt DateTime?
+  order      Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now())
+
+  @@index([variantId, expiresAt])
+}
+
+enum LocalDeliveryMethod {
+  ENTREGA_EM_MAOS
+  RETIRADA
+  MOTOBOY
+  OUTRO
+}
+
+model LocalDelivery {
+  id           String               @id @default(cuid())
+  orderId      String               @unique
+  scheduledAt  DateTime?
+  method       LocalDeliveryMethod?
+  location     String?
+  notes        String?
+  arrangedById String?
+  arrangedAt   DateTime?
+  deliveredAt  DateTime?
+  order        Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  arrangedBy   User?                @relation(fields: [arrangedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// Pagamentos (Mercado Pago)
+// ─────────────────────────────────────────────────────────────
+
+enum PaymentMethod {
+  PIX
+  CARTAO_CREDITO
+  BOLETO
+}
+
+enum PaymentStatus {
+  PENDENTE
+  EM_ANALISE
+  APROVADO
+  RECUSADO
+  CANCELADO
+  EXPIRADO
+  REEMBOLSADO
+  PARCIALMENTE_REEMBOLSADO
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  orderId         String
+  gateway         String        @default("mercadopago")
+  externalId      String?       @unique
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDENTE)
+  amountCents     Int
+  refundedCents   Int           @default(0)
+  installments    Int?
+  pixQrCode       String?
+  pixQrCodeBase64 String?
+  pixExpiresAt    DateTime?
+  boletoUrl       String?
+  statusDetail    String?
+  rawResponse     Json?
+  approvedAt      DateTime?
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([orderId])
+}
+
+/// Registro de webhooks recebidos (idempotência: o mesmo evento nunca é processado duas vezes).
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  provider    String
+  externalId  String
+  type        String
+  payload     Json
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+
+  @@unique([provider, externalId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Envio (só no modo "Vender para todo o Brasil" — Melhor Envio)
+// ─────────────────────────────────────────────────────────────
+
+enum ShipmentStatus {
+  PENDENTE
+  ETIQUETA_GERADA
+  POSTADO
+  EM_TRANSITO
+  SAIU_PARA_ENTREGA
+  ENTREGUE
+  DEVOLVIDO
+  CANCELADO
+}
+
+model Shipment {
+  id           String          @id @default(cuid())
+  orderId      String          @unique
+  provider     String          @default("melhorenvio")
+  carrier      String
+  serviceName  String
+  serviceId    String?
+  priceCents   Int
+  deliveryDays Int?
+  externalId   String?
+  trackingCode String?
+  labelUrl     String?
+  status       ShipmentStatus  @default(PENDENTE)
+  order        Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  events       ShipmentEvent[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model ShipmentEvent {
+  id          String         @id @default(cuid())
+  shipmentId  String
+  status      ShipmentStatus
+  description String
+  location    String?
+  occurredAt  DateTime
+  shipment    Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId, occurredAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Configurações da loja, aparência e conteúdo
+// ─────────────────────────────────────────────────────────────
+
+enum WhatsappRouting {
+  /// Sempre o número principal da loja
+  PRINCIPAL
+  /// O vendedor atribuído ao pedido
+  VENDEDOR_RESPONSAVEL
+  /// Revezamento entre vendedores ativos
+  RODIZIO
+}
+
+/// Registro único (id = "default").
+model StoreSettings {
+  id                         String          @id @default("default")
+  storeName                  String          @default("Petit Laços")
+  announcements              String[]        @default([])
+  /// Chave "Vender para todo o Brasil" — DESLIGADA por padrão (venda local)
+  nationwideShippingEnabled  Boolean         @default(false)
+  whatsappMain               String?
+  whatsappRouting            WhatsappRouting @default(PRINCIPAL)
+  lastRoundRobinSellerId     String?
+  /// Modelos das mensagens pré-preenchidas ({nome}, {pedido}, {itens}, {total}, {produto})
+  whatsappTemplates          Json            @default("{}")
+  /// Cidades/bairros atendidos na venda local (só para aviso no checkout)
+  servedAreas                String[]        @default([])
+  localDeliveryInfo          String?
+  /// Ex.: { "seg-sex": "09:00-18:00", "sab": "09:00-13:00" }
+  businessHours              Json?
+  pixDiscountPercent         Int             @default(5)
+  maxInstallmentsNoInterest  Int             @default(3)
+  /// Modo Brasil
+  freeShippingThresholdCents Int?
+  productionDays             Int             @default(2)
+  originZipCode              String?
+  originAddress              Json?
+  instagramUrl               String?
+  contactEmail               String?
+  updatedById                String?
+  updatedAt                  DateTime        @updatedAt
+}
+
+/// Tema da loja (id = "default"). JSON validado com Zod em src/features/theme.
+model ThemeSettings {
+  id               String    @id @default("default")
+  activePreset     String    @default("petit-classico")
+  draft            Json
+  published        Json
+  publishedAt      DateTime?
+  publishedById    String?
+  /// Tema sazonal agendado
+  scheduledPreset  String?
+  scheduleStartsAt DateTime?
+  scheduleEndsAt   DateTime?
+  updatedAt        DateTime  @updatedAt
+}
+
+model ThemeVersion {
+  id          String   @id @default(cuid())
+  label       String?
+  data        Json
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+}
+
+// Slides do hero e seções da Home ficam dentro do JSON do tema (ThemeSettings),
+// assim ganham rascunho, publicação e histórico junto com a aparência.
+
+model Banner {
+  id             String    @id @default(cuid())
+  title          String
+  subtitle       String?
+  imageUrl       String
+  mobileImageUrl String?
+  linkUrl        String?
+  position       Int       @default(0)
+  active         Boolean   @default(true)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  /// Ex.: "produto.criado", "modo-venda.brasil-ligado", "tema.publicado"
+  action     String
+  entityType String?
+  entityId   String?
+  details    Json?
+  ip         String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}
