@@ -6,6 +6,9 @@ import { db } from "@/lib/db";
 
 export const SETTINGS_TAG = "store-settings";
 
+/** Número usado enquanto a tela de Configurações não salva um no banco. */
+export const DEFAULT_WHATSAPP = "+55 35 9781-3556";
+
 /** Só o que a vitrine precisa saber (dados seguros para ir ao navegador). */
 export type PublicStoreSettings = {
   storeName: string;
@@ -27,7 +30,7 @@ export async function getPublicStoreSettings(): Promise<PublicStoreSettings> {
   const templates = (s?.whatsappTemplates ?? {}) as Record<string, unknown>;
   return {
     storeName: s?.storeName ?? "Petit Laços",
-    whatsappMain: s?.whatsappMain ?? null,
+    whatsappMain: s?.whatsappMain || DEFAULT_WHATSAPP,
     whatsappTemplates: Object.fromEntries(
       Object.entries(templates).filter((e): e is [string, string] => typeof e[1] === "string"),
     ),

@@ -152,6 +152,7 @@ async function main() {
       id: "default",
       announcements: ["Seu próximo laço favorito está aqui"],
       nationwideShippingEnabled: false, // venda LOCAL é o padrão
+      whatsappMain: "+55 35 9781-3556",
       whatsappRouting: "PRINCIPAL",
       whatsappTemplates: defaultWhatsappTemplates,
       localDeliveryInfo:
