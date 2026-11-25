@@ -176,7 +176,7 @@ export function ProductForm({
       }
       toast.success(form.id ? "Produto salvo." : "Produto criado.");
       if (!form.id) {
-        router.replace(`/admin/produtos/${res.id}`);
+        router.replace(`/admin/produtos/editar?id=${res.id}`);
       } else {
         setForm((f) => ({ ...f, slug: slugify(f.slug || f.name) }));
         router.refresh();

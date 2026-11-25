@@ -62,7 +62,7 @@ async function ProductList() {
             const status = STATUS_LABEL[p.status];
             return (
               <li key={p.id}>
-                <Link href={`/admin/produtos/${p.id}`} className="flex items-center gap-4 p-3 transition hover:bg-muted/60">
+                <Link href={`/admin/produtos/editar?id=${p.id}`} className="flex items-center gap-4 p-3 transition hover:bg-muted/60">
                   <span className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-muted">
                     {p.images[0] ? (
                       // eslint-disable-next-line @next/next/no-img-element -- miniatura da foto enviada

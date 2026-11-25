@@ -11,11 +11,15 @@ import { getProductForEdit, productFormOptions } from "@/features/products/admin
 
 export const metadata: Metadata = { title: "Editar produto", robots: { index: false } };
 
-async function EditProduct({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const user = await requireAdminPage(`/admin/produtos/${id}`);
+type SearchParams = Promise<{ id?: string | string[] }>;
+
+async function EditProduct({ searchParams }: { searchParams: SearchParams }) {
+  const raw = (await searchParams).id;
+  const id = Array.isArray(raw) ? raw[0] : raw;
+  const user = await requireAdminPage(`/admin/produtos/editar?id=${encodeURIComponent(id ?? "")}`);
   if (!user.can("GERENCIAR_PRODUTOS")) return <NoProductPermission />;
 
+  if (!id) notFound();
   const [product, { categories, collections }] = await Promise.all([getProductForEdit(id), productFormOptions()]);
   if (!product) notFound();
 
@@ -30,10 +34,10 @@ async function EditProduct({ params }: { params: Promise<{ id: string }> }) {
   );
 }
 
-export default function EditarProdutoPage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditarProdutoPage({ searchParams }: { searchParams: SearchParams }) {
   return (
     <Suspense fallback={<div className="p-10 text-muted-foreground">Carregando…</div>}>
-      <EditProduct params={params} />
+      <EditProduct searchParams={searchParams} />
     </Suspense>
   );
 }
