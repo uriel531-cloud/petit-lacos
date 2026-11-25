@@ -50,6 +50,16 @@ async function Dashboard() {
         </p>
       ) : null}
 
+      {user.can("GERENCIAR_PRODUTOS") ? (
+        <Link href="/admin/produtos" className="flex items-center gap-4 rounded-2xl border bg-card p-6 transition hover:bg-muted">
+          <Package className="size-8 text-primary" aria-hidden />
+          <span>
+            <span className="block text-xl font-bold">Produtos e fotos</span>
+            <span className="text-sm text-muted-foreground">Cadastrar, editar preços e estoque, enviar e organizar as fotos</span>
+          </span>
+        </Link>
+      ) : null}
+
       {user.can("EDITAR_TEMA") ? (
         <Link href="/admin/aparencia" className="flex items-center gap-4 rounded-2xl bg-primary p-6 text-primary-foreground transition hover:opacity-95">
           <Brush className="size-8" aria-hidden />

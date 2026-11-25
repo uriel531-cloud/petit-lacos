@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 const ITEMS = [
   { href: "/admin", label: "Início", icon: LayoutDashboard, ready: true },
   { href: "/admin/aparencia", label: "Aparência", icon: Brush, ready: true },
-  { href: "#", label: "Produtos", icon: Package, ready: false, phase: "Fase 2" },
+  { href: "/admin/produtos", label: "Produtos", icon: Package, ready: true },
   { href: "#", label: "Pedidos", icon: ShoppingCart, ready: false, phase: "Fase 7" },
   { href: "#", label: "Cupons", icon: Tags, ready: false, phase: "Fase 4" },
   { href: "#", label: "Modo de venda", icon: Truck, ready: false, phase: "Fase 5" },

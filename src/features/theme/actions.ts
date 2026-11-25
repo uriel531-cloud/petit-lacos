@@ -1,9 +1,5 @@
 "use server";
 
-import { randomBytes } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-
 import { updateTag } from "next/cache";
 import sharp from "sharp";
 import { z } from "zod";
@@ -12,6 +8,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/features/auth/session";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
+import { storeImage } from "@/lib/storage";
 
 import { DEFAULT_THEME } from "./defaults";
 import { normalizeTheme, parseThemeStrict } from "./normalize";
@@ -178,8 +175,7 @@ const MAX_BYTES = 8 * 1024 * 1024;
 
 /**
  * Envio de imagem para o tema (hero, banners, bento…). Converte para WebP e
- * limita o tamanho. Salva em /public/uploads (funciona no computador/servidor próprio);
- * na hospedagem (Vercel) isso será trocado pelo Cloudinary na Fase 2.
+ * limita o tamanho. Guarda no Vercel Blob (hospedagem) ou em /public/uploads (computador).
  */
 export async function uploadThemeImage(formData: FormData): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   try {
@@ -192,12 +188,9 @@ export async function uploadThemeImage(formData: FormData): Promise<{ ok: true; 
     const input = Buffer.from(await file.arrayBuffer());
     const output = await sharp(input).rotate().resize({ width: 2400, height: 2400, fit: "inside", withoutEnlargement: true }).webp({ quality: 84 }).toBuffer();
 
-    const dir = path.join(process.cwd(), "public", "uploads", "tema");
-    await mkdir(dir, { recursive: true });
-    const name = `${Date.now()}-${randomBytes(4).toString("hex")}.webp`;
-    await writeFile(path.join(dir, name), output);
-    await logActivity(user.id, "tema.imagem-enviada", { entityType: "arquivo", entityId: name });
-    return { ok: true, url: `/uploads/tema/${name}` };
+    const url = await storeImage("tema", output);
+    await logActivity(user.id, "tema.imagem-enviada", { entityType: "arquivo", entityId: url });
+    return { ok: true, url };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Falha no envio." };
   }
