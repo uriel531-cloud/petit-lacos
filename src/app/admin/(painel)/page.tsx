@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { requireAdminPage } from "@/features/auth/session";
+import { DEFAULT_WHATSAPP } from "@/features/store/settings";
 import { db } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Painel", robots: { index: false } };
@@ -43,7 +44,7 @@ async function Dashboard() {
         </div>
       </div>
 
-      {!settings?.whatsappMain ? (
+      {!(settings?.whatsappMain || DEFAULT_WHATSAPP) ? (
         <p className="rounded-2xl border border-highlight bg-highlight/40 p-4 text-sm">
           <strong>WhatsApp da loja ainda não configurado.</strong> O botão flutuante e o “Tirar dúvida” aparecem assim que o número for cadastrado
           (tela “Modo de venda”, Fase 5).
